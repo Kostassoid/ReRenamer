@@ -1,24 +1,73 @@
-// RenamerCow.cpp : Defines the entry point for the console application.
+// ReRenamerC.cpp : Defines the entry point for the console application.
 //
 
 #include "stdafx.h"
 
 using namespace System;
 using namespace System::IO;
+using namespace System::Linq;
+using namespace System::Collections::Generic;
+using namespace System::Text::RegularExpressions;
+
+ref class FilenamePredicate
+{
+	Regex^ m_matcher;
+
+public:
+	FilenamePredicate(String^ pattern)
+	{
+		m_matcher = gcnew Regex(pattern);
+	}
+
+	bool Check(String^ name)
+	{
+		return m_matcher->IsMatch(name);
+	}
+};
 
 array<String^>^ Find(String^ path, String^ pattern)
 {
-	array<String^>^ files = Directory::GetFiles(path, "*.*", SearchOption::TopDirectoryOnly);
+	try
+	{
+		array<String^>^ files = Directory::GetFiles(path, "*.*", SearchOption::TopDirectoryOnly);
+		IEnumerable<String^>^ filenames = Enumerable::Select<String^>(files, gcnew Func<String^, String^>(Path::GetFileName));
 
-	return files;
+		FilenamePredicate^ predicate = gcnew FilenamePredicate(pattern);
 
+		return Enumerable::ToArray(Enumerable::Where<String^>(filenames, gcnew Func<String^, bool>(predicate, &FilenamePredicate::Check)));
+	}
+	catch(DirectoryNotFoundException^)
+	{
+		Console::WriteLine("Invalid path '{0}'", path);
+		return gcnew array<String^>(0);
+	}
+}
 
-                //.Select(Path.GetFileName)
-                //.Where(f => Regex.IsMatch(f, pattern));
+void RenameOne(String^ path, String^ fromName, String^ toName, bool whatif)
+{
+	Console::WriteLine("{0} -> {1}", fromName, toName);
+	if (whatif) return;
+	           
+	String^ fullFromName = Path::Combine(path, fromName);
+	String^ fullToName = Path::Combine(path, toName);
+
+	try
+	{
+		File::Move(fullFromName, fullToName);
+	}
+	catch (Exception^ e)
+	{
+		Console::WriteLine("Unable to rename '{0}' because of '{1}'", fromName, e->Message);
+	}     
 }
 
 void Rename(String^ path, String^ pattern, String^ replacement, bool whatif, array<String^>^ files)
 {
+	for each (auto file in files)
+	{
+		String^ newName = Regex::Replace(file, pattern, replacement);
+		RenameOne(path, file, newName, whatif);
+	}
 }
 
 int FindAndRename(String^ path, String^ pattern, String^ replacement, bool whatif)
@@ -27,19 +76,8 @@ int FindAndRename(String^ path, String^ pattern, String^ replacement, bool whati
 
 	Console::WriteLine("Looking for '{0}' in '{1}' and replacing with '{2}'", pattern, path, replacement);
 
-	try
-	{
-		array<String^>^ files = Find(path, pattern);
-		Rename(path, pattern, replacement, whatif, files);
-	}
-	catch(DirectoryNotFoundException^)
-	{
-		Console::WriteLine("Invalid path '{0}'", path);
-	}
-	finally
-	{
-
-	}
+	array<String^>^ files = Find(path, pattern);
+	Rename(path, pattern, replacement, whatif, files);
 	
 	return 0;
 }

@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace ReRenamerCS
 {
@@ -12,10 +10,18 @@ namespace ReRenamerCS
     {
         static IEnumerable<string> Find(string path, string pattern)
         {
-            return
-                Directory.GetFiles(path, "*.*", SearchOption.TopDirectoryOnly)
-                .Select(Path.GetFileName)
-                .Where(f => Regex.IsMatch(f, pattern));
+            try
+            {
+                return
+                    Directory.GetFiles(path, "*.*", SearchOption.TopDirectoryOnly)
+                    .Select(Path.GetFileName)
+                    .Where(f => Regex.IsMatch(f, pattern));
+            }
+            catch (DirectoryNotFoundException)
+            {
+                Console.WriteLine("Invalid path '{0}'", path);
+                return new string[0];
+            }
         }
 
         static void RenameOne(string path, string fromName, string toName, bool whatif)
@@ -48,17 +54,10 @@ namespace ReRenamerCS
         static int FindAndRename(string path, string pattern, string replacement, bool whatif)
         {
             if (whatif) Console.WriteLine("Test mode");
-
             Console.WriteLine("Looking for '{0}' in '{1}' and replacing with '{2}'", pattern, path, replacement);
-            try
-            {
-                var files = Find(path, pattern);
-                Rename(path, pattern, replacement, whatif, files);
-            }
-            catch(DirectoryNotFoundException)
-            {
-                Console.WriteLine("Invalid path '{0}'", path);
-            }
+
+            var files = Find(path, pattern);
+            Rename(path, pattern, replacement, whatif, files);
             
             return 0;
         }

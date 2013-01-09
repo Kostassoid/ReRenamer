@@ -3,9 +3,12 @@ open System.IO
 open System.Text.RegularExpressions
 
 let find path pattern =
-    Directory.GetFiles(path, "*.*", SearchOption.TopDirectoryOnly)
-    |> Seq.map (Path.GetFileName)
-    |> Seq.where (fun n -> Regex.IsMatch (n, pattern))
+    try
+        Directory.GetFiles(path, "*.*", SearchOption.TopDirectoryOnly)
+        |> Seq.map (Path.GetFileName)
+        |> Seq.where (fun n -> Regex.IsMatch (n, pattern))
+    with
+        | :? DirectoryNotFoundException -> printfn "Invalid path '%s'" path; Seq.empty<string>
 
 let renameOne path fromName toName whatif =
     printfn "%s -> %s" fromName toName
@@ -25,11 +28,8 @@ let rename path pattern (replacement:string) whatif files =
 let findAndRename path pattern replacement whatif =
     if (whatif) then printfn "Test mode"
     printfn "Looking for '%s' in '%s' and replacing with '%s'" pattern path replacement
-    try
-        find path pattern
-        |> rename path pattern replacement whatif
-    with
-        | :? DirectoryNotFoundException -> printfn "Invalid path '%s'" path
+    find path pattern
+    |> rename path pattern replacement whatif
     0
 
 [<EntryPoint>]
