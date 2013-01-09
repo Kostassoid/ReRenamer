@@ -29,10 +29,10 @@ array<String^>^ Find(String^ path, String^ pattern)
 {
 	try
 	{
-		array<String^>^ files = Directory::GetFiles(path, "*.*", SearchOption::TopDirectoryOnly);
-		IEnumerable<String^>^ filenames = Enumerable::Select<String^>(files, gcnew Func<String^, String^>(Path::GetFileName));
+		auto files = Directory::GetFiles(path, "*.*", SearchOption::TopDirectoryOnly);
+		auto filenames = Enumerable::Select<String^>(files, gcnew Func<String^, String^>(Path::GetFileName));
 
-		FilenamePredicate^ predicate = gcnew FilenamePredicate(pattern);
+		auto predicate = gcnew FilenamePredicate(pattern);
 
 		return Enumerable::ToArray(Enumerable::Where<String^>(filenames, gcnew Func<String^, bool>(predicate, &FilenamePredicate::Check)));
 	}
@@ -48,8 +48,8 @@ void RenameOne(String^ path, String^ fromName, String^ toName, bool whatif)
 	Console::WriteLine("{0} -> {1}", fromName, toName);
 	if (whatif) return;
 	           
-	String^ fullFromName = Path::Combine(path, fromName);
-	String^ fullToName = Path::Combine(path, toName);
+	auto fullFromName = Path::Combine(path, fromName);
+	auto fullToName = Path::Combine(path, toName);
 
 	try
 	{
@@ -63,10 +63,10 @@ void RenameOne(String^ path, String^ fromName, String^ toName, bool whatif)
 
 void Rename(String^ path, String^ pattern, String^ replacement, bool whatif, array<String^>^ files)
 {
-	for each (auto file in files)
+	for each (auto oldName in files)
 	{
-		String^ newName = Regex::Replace(file, pattern, replacement);
-		RenameOne(path, file, newName, whatif);
+		auto newName = Regex::Replace(oldName, pattern, replacement);
+		RenameOne(path, oldName, newName, whatif);
 	}
 }
 
@@ -76,7 +76,7 @@ int FindAndRename(String^ path, String^ pattern, String^ replacement, bool whati
 
 	Console::WriteLine("Looking for '{0}' in '{1}' and replacing with '{2}'", pattern, path, replacement);
 
-	array<String^>^ files = Find(path, pattern);
+	auto files = Find(path, pattern);
 	Rename(path, pattern, replacement, whatif, files);
 	
 	return 0;
@@ -90,9 +90,9 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 1;
 	}
 
-	String^ path = gcnew String(argv[1]);
-	String^ pattern = gcnew String(argv[2]);
-    String^ replacement = gcnew String(argv[3]);
+	auto path = gcnew String(argv[1]);
+	auto pattern = gcnew String(argv[2]);
+    auto replacement = gcnew String(argv[3]);
 	bool whatif = argc > 4 && _tcscmp(argv[4], L"-whatif") == 0;
 
     return FindAndRename(path, pattern, replacement, whatif);
