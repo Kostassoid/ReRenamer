@@ -1,0 +1,14 @@
+# IDEA Ignores
+*.ipr
+*.iws
+*/.idea/workspace.xml
+*/.idea/tasks.xml
+local.properties
+
+# Generic Android ignores
+bin/
+target
+gen/
+out/
+cached-robolectric-classes.jar
+version
